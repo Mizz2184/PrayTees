@@ -2,8 +2,12 @@ import React, { useState } from 'react';
 import ProductModal from './ProductModal';
 import { usePrintfulProducts, transformPrintfulToProduct } from '../hooks/usePrintfulProducts';
 
-const ProductGrid = ({ addToCart }) => {
-  const [selectedProduct, setSelectedProduct] = useState(null);
+interface ProductGridProps {
+  addToCart: (product: any) => void;
+}
+
+const ProductGrid = ({ addToCart }: ProductGridProps) => {
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const { data: printfulProducts, isLoading, error } = usePrintfulProducts();
 
   // Only use real Printful products - no fallbacks
@@ -57,7 +61,7 @@ const ProductGrid = ({ addToCart }) => {
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Fresh designs to help you express your faith with confidence and style.
-            {isLoading && <span className="block text-sm mt-2">Loading products from Printful...</span>}
+            {isLoading && <span className="block text-sm mt-2">Loading our latest collection...</span>}
           </p>
         </div>
 

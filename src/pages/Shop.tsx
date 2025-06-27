@@ -12,7 +12,7 @@ interface ShopProps {
 }
 
 const Shop = ({ addToCart, cartItems = [], onRemoveFromCart, onUpdateCartQuantity }: ShopProps) => {
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { data: printfulProducts, isLoading, error } = usePrintfulProducts();
 
@@ -48,6 +48,43 @@ const Shop = ({ addToCart, cartItems = [], onRemoveFromCart, onUpdateCartQuantit
     }
   };
 
+  // Show message if no products available
+  if (!isLoading && products.length === 0) {
+    return (
+      <div className="min-h-screen">
+        <Header 
+          cartItems={cartItems}
+          isCartOpen={isCartOpen}
+          setIsCartOpen={setIsCartOpen}
+          onRemove={onRemoveFromCart}
+          onUpdateQuantity={onUpdateCartQuantity}
+        />
+        
+        <div className="pt-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div className="text-center">
+              <h1 className="text-4xl md:text-6xl font-black uppercase mb-8 tracking-tight">
+                Shop Collection
+              </h1>
+              <div className="max-w-md mx-auto">
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">Products Loading</h3>
+                <p className="text-gray-600 mb-6">
+                  We're connecting to our product catalog. Please check back in a few moments.
+                </p>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="bg-black text-white px-6 py-3 font-bold uppercase tracking-wide hover:bg-gray-800 transition-colors"
+                >
+                  Refresh Page
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <Header 
@@ -62,17 +99,17 @@ const Shop = ({ addToCart, cartItems = [], onRemoveFromCart, onUpdateCartQuantit
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h1 className="text-4xl md:text-6xl font-black uppercase mb-4 tracking-tight">
-              Shop All Products
+              Shop Collection
             </h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Discover our complete collection of faith-based apparel designed to help you express your beliefs with confidence and style.
-              {isLoading && <span className="block text-sm mt-2">Loading products from Printful...</span>}
+              Discover our complete range of faith-inspired apparel designed to help you express your beliefs with style and confidence.
+              {isLoading && <span className="block text-sm mt-2">Loading our latest collection...</span>}
             </p>
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {[...Array(12)].map((_, index) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {[...Array(8)].map((_, index) => (
                 <div key={index} className="animate-pulse">
                   <div className="bg-gray-200 aspect-[4/5] mb-4"></div>
                   <div className="h-4 bg-gray-200 rounded mb-2"></div>
@@ -110,7 +147,7 @@ const Shop = ({ addToCart, cartItems = [], onRemoveFromCart, onUpdateCartQuantit
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-16">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {products.map((product) => (
                 <div key={product.id} className="group cursor-pointer">
                   <div className="relative overflow-hidden bg-gray-100 aspect-[4/5] mb-4">

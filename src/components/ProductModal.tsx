@@ -178,10 +178,10 @@ const ProductModal = ({ product, onClose, onAddToCart }: ProductModalProps) => {
               Add to Cart - ${(currentPrice * quantity).toFixed(2)}
             </button>
 
-            {/* Variant Info */}
+            {/* Product Info */}
             {product.all_variants && product.all_variants.length > 0 && (
               <div className="mt-4 text-xs text-gray-500">
-                <p>✅ Real Printful product with {product.all_variants.length} variants</p>
+                <p>✅ Premium quality product with {product.all_variants.length} variants</p>
                 <p>💰 Prices update based on selected size/color combination</p>
               </div>
             )}
