@@ -9,18 +9,27 @@ import NotFound from "./pages/NotFound";
 import Checkout from "./pages/Checkout";
 import { useState } from "react";
 
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  size?: string;
+  quantity?: number;
+}
+
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [cartItems, setCartItems] = useState([]);
+  const [cartItems, setCartItems] = useState<Product[]>([]);
 
-  const addToCart = (product) => {
+  const addToCart = (product: Product) => {
     setCartItems(prev => {
       const existing = prev.find(item => item.id === product.id && item.size === product.size);
       if (existing) {
         return prev.map(item => 
           item.id === product.id && item.size === product.size
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: (item.quantity || 1) + 1 }
             : item
         );
       }
@@ -28,11 +37,11 @@ const App = () => {
     });
   };
 
-  const removeFromCart = (id, size) => {
+  const removeFromCart = (id: string, size?: string) => {
     setCartItems(prev => prev.filter(item => !(item.id === id && item.size === size)));
   };
 
-  const updateCartQuantity = (id, size, quantity) => {
+  const updateCartQuantity = (id: string, size: string | undefined, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(id, size);
     } else {
