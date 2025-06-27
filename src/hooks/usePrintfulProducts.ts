@@ -55,17 +55,19 @@ export const transformPrintfulToProduct = (printfulProduct: any) => {
   console.log('🔧 First variant:', firstVariant);
   console.log('🔧 Variants count:', variants.length);
   
-  // Extract real price from first variant, or use fallback pricing
+  // Extract real price from first variant - now with enhanced data
   let price = 24.99; // Default fallback
   
-  // Handle both real Printful products and fallback products
-  if (firstVariant) {
-    if (typeof firstVariant.retail_price === 'string') {
-      // Real Printful variant
-      price = parseFloat(firstVariant.retail_price);
-    } else if (typeof firstVariant === 'object' && firstVariant.retail_price) {
-      // Fallback product format
-      price = parseFloat(firstVariant.retail_price);
+  // Use real Printful pricing when available
+  if (firstVariant && firstVariant.retail_price) {
+    price = parseFloat(firstVariant.retail_price);
+    console.log('🔧 Using real Printful price:', price);
+  } else if (variants.length > 0) {
+    // Try to get price from any available variant
+    const variantWithPrice = variants.find((v: any) => v.retail_price);
+    if (variantWithPrice) {
+      price = parseFloat(variantWithPrice.retail_price);
+      console.log('🔧 Using variant price:', price);
     }
   }
   
@@ -86,6 +88,7 @@ export const transformPrintfulToProduct = (printfulProduct: any) => {
     } else {
       price = 24.99;
     }
+    console.log('🔧 Using fallback price based on product name:', price);
   }
   
   // Use preview image from first variant if available, otherwise thumbnail
@@ -95,20 +98,20 @@ export const transformPrintfulToProduct = (printfulProduct: any) => {
 
   // Extract unique sizes from variants or use defaults
   const sizes = variants.length > 0 
-    ? variants
+    ? [...new Set(variants
         .map((variant: any) => variant.size)
-        .filter((size: string, index: number, arr: string[]) => size && arr.indexOf(size) === index)
+        .filter((size: string) => size))]
         .sort()
     : ["XS", "S", "M", "L", "XL", "XXL"];
 
   // Extract unique colors from variants or use defaults
   const colors = variants.length > 0
-    ? variants
+    ? [...new Set(variants
         .map((variant: any) => variant.color)
-        .filter((color: string, index: number, arr: string[]) => color && arr.indexOf(color) === index)
+        .filter((color: string) => color))]
     : ["Black", "White", "Navy"];
 
-  // Create variant mapping for shipping calculations
+  // Create variant mapping for shipping calculations and color switching
   const variantMapping = variants.length > 0 
     ? variants.reduce((map: any, variant: any) => {
         const key = `${variant.size || 'default'}-${variant.color || 'default'}`;
@@ -116,6 +119,30 @@ export const transformPrintfulToProduct = (printfulProduct: any) => {
         return map;
       }, {})
     : { 'default-default': firstVariant?.id || 2 }; // Use first variant ID or fallback
+
+  // Create color to image mapping for variant switching
+  const colorImageMapping = variants.length > 0
+    ? variants.reduce((map: any, variant: any) => {
+        if (variant.color && variant.files) {
+          const previewFile = variant.files.find((file: any) => file.type === 'preview');
+          if (previewFile && previewFile.preview_url) {
+            map[variant.color] = previewFile.preview_url;
+          }
+        }
+        return map;
+      }, {})
+    : {};
+
+  // Create variant price mapping for real-time price updates
+  const variantPriceMapping = variants.length > 0
+    ? variants.reduce((map: any, variant: any) => {
+        if (variant.color && variant.size && variant.retail_price) {
+          const key = `${variant.size}-${variant.color}`;
+          map[key] = parseFloat(variant.retail_price);
+        }
+        return map;
+      }, {})
+    : {};
 
   const transformedProduct = {
     id: printfulProduct.id.toString(),
@@ -128,12 +155,15 @@ export const transformPrintfulToProduct = (printfulProduct: any) => {
     category: printfulProduct.name.includes('t-shirt') || printfulProduct.name.includes('tee') || printfulProduct.name.includes('Tee') ? 'Tees' : 
               printfulProduct.name.includes('Hoodie') || printfulProduct.name.includes('hoodie') ? 'Hoodies' :
               printfulProduct.name.includes('Tank') || printfulProduct.name.includes('tank') ? 'Tanks' : 'Apparel',
-    // Add Printful-specific data for shipping calculations
+    // Add Printful-specific data for shipping calculations and variant switching
     printful_id: printfulProduct.id,
     default_variant_id: firstVariant?.id || 2,
-    variant_mapping: variantMapping
+    variant_mapping: variantMapping,
+    color_image_mapping: colorImageMapping,
+    variant_price_mapping: variantPriceMapping,
+    all_variants: variants // Store all variants for detailed modal functionality
   };
   
-  console.log('🔧 Transformed product with variant mapping:', transformedProduct);
+  console.log('🔧 Transformed product with enhanced variant data:', transformedProduct);
   return transformedProduct;
 };

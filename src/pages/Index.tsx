@@ -11,6 +11,7 @@ interface Product {
   price: number;
   image: string;
   size?: string;
+  quantity?: number;
 }
 
 interface IndexProps {
@@ -20,9 +21,33 @@ interface IndexProps {
 }
 
 const Index = ({ addToCart, cartItems, setCartItems }: IndexProps) => {
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  const removeFromCart = (id: string, size?: string) => {
+    setCartItems(cartItems.filter(item => !(item.id === id && item.size === size)));
+  };
+
+  const updateCartQuantity = (id: string, size: string | undefined, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(id, size);
+    } else {
+      setCartItems(cartItems.map(item => 
+        item.id === id && item.size === size
+          ? { ...item, quantity }
+          : item
+      ));
+    }
+  };
+
   return (
     <div className="min-h-screen">
-      <Header cartItems={cartItems} setCartItems={setCartItems} />
+      <Header 
+        cartItems={cartItems} 
+        isCartOpen={isCartOpen}
+        setIsCartOpen={setIsCartOpen}
+        onRemove={removeFromCart}
+        onUpdateQuantity={updateCartQuantity}
+      />
       <HeroSection />
       <FeaturedCollections />
       <ProductGrid addToCart={addToCart} />

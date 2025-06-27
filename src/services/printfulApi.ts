@@ -126,6 +126,11 @@ export interface PrintfulShippingResponse {
   }>;
 }
 
+// New interface for detailed product data
+export interface DetailedPrintfulProduct extends PrintfulProduct {
+  sync_variants: PrintfulVariant[];
+}
+
 class PrintfulService {
   // Test function to debug API calls
   async testConnection(): Promise<void> {
@@ -198,19 +203,41 @@ class PrintfulService {
     throw new Error('All Netlify function endpoints failed');
   }
 
-  async getProductVariants(productId: number): Promise<PrintfulVariant[]> {
-    try {
-      // For now, return empty array as we don't have detailed variant endpoint
-      // This can be expanded later if needed
-      console.log('Getting variants for product', productId);
-      return [];
-    } catch (error) {
-      console.warn(`Failed to fetch variants for product ${productId}:`, error);
-      return [];
+  // New method to get detailed product variants
+  async getProductVariants(productId: number): Promise<DetailedPrintfulProduct | null> {
+    console.log('🔍 Fetching detailed product variants for:', productId);
+    
+    for (const endpoint of FUNCTION_ENDPOINTS) {
+      try {
+        const functionUrl = `${endpoint}/printful-product-variants?id=${productId}`;
+        console.log('🔍 Trying variants endpoint:', functionUrl);
+        
+        const response = await fetch(functionUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          console.log('🔍 Variants endpoint failed, trying next...');
+          continue;
+        }
+
+        const productDetails = await response.json();
+        console.log('✅ Product variants fetched successfully:', productDetails);
+        return productDetails;
+      } catch (error) {
+        console.error('❌ Failed to fetch variants from endpoint:', endpoint, error);
+        continue;
+      }
     }
+    
+    console.warn('⚠️ Could not fetch product variants');
+    return null;
   }
 
-  // Get all products - only real Printful products, no fallbacks
+  // Get all products with enhanced variant data - only real Printful products, no fallbacks
   async getAllProducts(): Promise<any[]> {
     try {
       console.log('🚀 Starting getAllProducts - fetching only real Printful products...');
@@ -222,16 +249,51 @@ class PrintfulService {
         return [];
       }
       
-      // Transform products to include price from variants
-      const transformedProducts = products.map(product => ({
-        ...product,
-        variants: [],
-        firstVariant: null,
-        // Use thumbnail_url if available, otherwise use a default
-        image: product.thumbnail_url || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'
-      }));
+      // Transform products to include enhanced pricing and variant data
+      const transformedProducts = await Promise.all(
+        products.map(async (product) => {
+          try {
+            // Get detailed product variants for accurate pricing and variant info
+            const detailedProduct = await this.getProductVariants(product.id);
+            
+            if (detailedProduct && detailedProduct.sync_variants) {
+              console.log(`🎯 Enhanced product ${product.name} with ${detailedProduct.sync_variants.length} variants`);
+              
+              // Find the first available variant for pricing
+              const firstVariant = detailedProduct.sync_variants.find(v => v.synced && !v.is_ignored) || 
+                                 detailedProduct.sync_variants[0];
+              
+              return {
+                ...product,
+                variants: detailedProduct.sync_variants,
+                firstVariant: firstVariant,
+                // Use thumbnail_url if available, otherwise use first variant preview
+                image: product.thumbnail_url || 
+                       firstVariant?.files?.find(f => f.type === 'preview')?.preview_url ||
+                       'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'
+              };
+            } else {
+              // Fallback for products without detailed variants
+              return {
+                ...product,
+                variants: [],
+                firstVariant: null,
+                image: product.thumbnail_url || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'
+              };
+            }
+          } catch (error) {
+            console.warn(`⚠️ Could not enhance product ${product.name}:`, error);
+            return {
+              ...product,
+              variants: [],
+              firstVariant: null,
+              image: product.thumbnail_url || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'
+            };
+          }
+        })
+      );
       
-      console.log('🎯 Returning real Printful products:', transformedProducts.length);
+      console.log('🎯 Returning enhanced Printful products:', transformedProducts.length);
       return transformedProducts;
     } catch (error) {
       console.error('💥 Error in getAllProducts:', error);
@@ -281,14 +343,14 @@ class PrintfulService {
         }
       }
 
-      if (!response.ok) {
-        throw new Error(`Netlify shipping function error: ${response.status}`);
+      if (!response || !response.ok) {
+        throw new Error(`Netlify shipping function error: ${response?.status || 'No response'}`);
       }
 
       const data = await response.json();
       
       if (data.code === 200 && data.result) {
-        return data.result.map(rate => ({
+        return data.result.map((rate: any) => ({
           name: rate.name,
           rate: parseFloat(rate.rate),
           estimated_days: rate.minDeliveryDays === rate.maxDeliveryDays 
