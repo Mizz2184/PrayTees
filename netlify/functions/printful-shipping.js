@@ -1,39 +1,34 @@
 const PRINTFUL_API_KEY = 'OuQXFPCYys3ONYsDlPDFy7mNdfIKPFqGxYC1GACl';
 
 exports.handler = async (event, context) => {
+  // Enable CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Cache-Control': 'no-cache',
   };
 
+  // Handle preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ message: 'CORS preflight successful' }),
+      body: '',
     };
   }
 
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers: {
-        ...headers,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
-        error: 'Method not allowed',
-        allowedMethods: ['POST', 'OPTIONS']
-      }),
+      headers,
+      body: JSON.stringify({ error: 'Method not allowed' }),
     };
   }
 
   try {
     const requestBody = JSON.parse(event.body);
-    console.log('🚀 Shipping calculation request:', requestBody);
-
+    console.log('🚚 Netlify function: Calculating shipping rates...', requestBody);
+    
     const response = await fetch('https://api.printful.com/shipping/rates', {
       method: 'POST',
       headers: {
@@ -44,24 +39,10 @@ exports.handler = async (event, context) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Printful shipping API error:', errorData);
-      
-      return {
-        statusCode: response.status,
-        headers: {
-          ...headers,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          error: 'Printful shipping API error',
-          status: response.status,
-          message: errorData
-        }),
-      };
+      throw new Error(`Printful shipping API error: ${response.status}`);
     }
 
-    const shippingData = await response.json();
+    const data = await response.json();
     console.log('✅ Shipping rates calculated successfully');
 
     return {
@@ -70,11 +51,10 @@ exports.handler = async (event, context) => {
         ...headers,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(shippingData),
+      body: JSON.stringify(data),
     };
-
   } catch (error) {
-    console.error('Error calculating shipping rates:', error);
+    console.error('❌ Error calculating shipping rates:', error);
     
     return {
       statusCode: 500,
@@ -83,8 +63,8 @@ exports.handler = async (event, context) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ 
-        error: 'Internal server error',
-        message: error.message
+        error: 'Failed to calculate shipping',
+        message: error.message 
       }),
     };
   }

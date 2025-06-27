@@ -1,56 +1,40 @@
 const PRINTFUL_API_KEY = 'OuQXFPCYys3ONYsDlPDFy7mNdfIKPFqGxYC1GACl';
 
 exports.handler = async (event, context) => {
+  // Enable CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Cache-Control': 'no-cache',
   };
 
+  // Handle preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ message: 'CORS preflight successful' }),
+      body: '',
     };
   }
 
-  if (event.httpMethod !== 'GET') {
+  // Extract product ID from path
+  const productId = event.queryStringParameters?.id;
+  
+  if (!productId) {
     return {
-      statusCode: 405,
+      statusCode: 400,
       headers: {
         ...headers,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ 
-        error: 'Method not allowed',
-        allowedMethods: ['GET', 'OPTIONS']
-      }),
+      body: JSON.stringify({ error: 'Product ID required' }),
     };
   }
 
   try {
-    const productId = event.queryStringParameters?.id;
+    console.log('🔍 Netlify function: Fetching variants for product', productId);
     
-    if (!productId) {
-      return {
-        statusCode: 400,
-        headers: {
-          ...headers,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          error: 'Product ID is required',
-          usage: 'Add ?id=PRODUCT_ID to the URL'
-        }),
-      };
-    }
-
-    console.log('🚀 Fetching product variants for ID:', productId);
-
     const response = await fetch(`https://api.printful.com/store/products/${productId}`, {
-      method: 'GET',
       headers: {
         'Authorization': `Bearer ${PRINTFUL_API_KEY}`,
         'Content-Type': 'application/json',
@@ -58,24 +42,10 @@ exports.handler = async (event, context) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Printful product variants API error:', errorData);
-      
-      return {
-        statusCode: response.status,
-        headers: {
-          ...headers,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          error: 'Printful product variants API error',
-          status: response.status,
-          message: errorData
-        }),
-      };
+      throw new Error(`Printful API error: ${response.status}`);
     }
 
-    const productData = await response.json();
+    const data = await response.json();
     console.log('✅ Product variants fetched successfully');
 
     return {
@@ -84,11 +54,10 @@ exports.handler = async (event, context) => {
         ...headers,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(productData.result || {}),
+      body: JSON.stringify(data.result || {}),
     };
-
   } catch (error) {
-    console.error('Error fetching product variants:', error);
+    console.error('❌ Error fetching product variants:', error);
     
     return {
       statusCode: 500,
@@ -97,8 +66,8 @@ exports.handler = async (event, context) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ 
-        error: 'Internal server error',
-        message: error.message
+        error: 'Failed to fetch product variants',
+        message: error.message 
       }),
     };
   }
