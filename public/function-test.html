@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netlify Function Diagnostic</title>
+    <style>
+        body { font-family: monospace; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        button { padding: 12px 24px; margin: 10px 5px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0052a3; }
+        .result { background: #f9f9f9; padding: 15px; margin: 15px 0; border: 1px solid #ddd; border-radius: 4px; white-space: pre-wrap; font-size: 12px; }
+        .error { background: #ffe6e6; border-color: #ff9999; }
+        .success { background: #e6ffe6; border-color: #99ff99; }
+        .warning { background: #fff3cd; border-color: #ffeaa7; }
+        .info { color: #666; font-size: 14px; margin: 10px 0; }
+        h1 { color: #333; border-bottom: 2px solid #0066cc; padding-bottom: 10px; }
+        h2 { color: #555; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Netlify Function Diagnostic Tool</h1>
+        <div class="info">Use this tool to diagnose why Printful products aren't loading on your deployed site.</div>
+        
+        <h2>Step 1: Environment Check</h2>
+        <button onclick="checkEnvironment()">Check Environment</button>
+        <div class="result" id="envResult"></div>
+        
+        <h2>Step 2: Test Function Endpoints</h2>
+        <button onclick="testEndpoint('/.netlify/functions/printful-products')">Test /.netlify/functions/</button>
+        <button onclick="testEndpoint('/api/printful-products')">Test /api/</button>
+        <div class="result" id="endpointResult"></div>
+        
+        <h2>Step 3: Check Function Response</h2>
+        <button onclick="detailedFunctionTest()">Detailed Function Test</button>
+        <div class="result" id="detailedResult"></div>
+        
+        <h2>Step 4: Network Analysis</h2>
+        <button onclick="networkAnalysis()">Analyze Network</button>
+        <div class="result" id="networkResult"></div>
+        
+        <h2>Troubleshooting Guide</h2>
+        <div class="info">
+            <strong>Common Issues:</strong><br>
+            • 404 Error: Netlify functions not deployed correctly<br>
+            • HTML Response: Function returning Netlify's 404 page instead of JSON<br>
+            • CORS Error: Function headers not configured properly<br>
+            • 500 Error: Internal function error (check Netlify logs)<br>
+        </div>
+    </div>
+
+    <script>
+        function checkEnvironment() {
+            const result = document.getElementById('envResult');
+            const env = {
+                hostname: window.location.hostname,
+                protocol: window.location.protocol,
+                port: window.location.port,
+                pathname: window.location.pathname,
+                origin: window.location.origin,
+                href: window.location.href,
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString(),
+                isLocalhost: window.location.hostname === 'localhost',
+                isNetlifyDomain: window.location.hostname.includes('netlify.app') || window.location.hostname.includes('netlify.com'),
+                isCustomDomain: !window.location.hostname.includes('localhost') && !window.location.hostname.includes('netlify')
+            };
+            
+            result.textContent = JSON.stringify(env, null, 2);
+            result.className = 'result info';
+        }
+
+        async function testEndpoint(endpoint) {
+            const result = document.getElementById('endpointResult');
+            result.textContent = `Testing endpoint: ${endpoint}\n\n`;
+            result.className = 'result';
+            
+            try {
+                console.log('Testing endpoint:', endpoint);
+                const startTime = performance.now();
+                
+                const response = await fetch(endpoint, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+                
+                // Try to get response text first
+                const responseText = await response.text();
+                
+                let responseData;
+                let isJson = false;
+                try {
+                    responseData = JSON.parse(responseText);
+                    isJson = true;
+                } catch {
+                    responseData = responseText;
+                }
+                
+                const testResult = {
+                    endpoint: endpoint,
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    responseTime: `${responseTime}ms`,
+                    headers: Object.fromEntries(response.headers.entries()),
+                    contentType: response.headers.get('content-type'),
+                    isJson: isJson,
+                    responseLength: responseText.length,
+                    responsePreview: responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''),
+                    fullResponse: isJson ? responseData : responseText
+                };
+                
+                result.textContent += JSON.stringify(testResult, null, 2);
+                result.className = response.ok ? 'result success' : 'result error';
+                
+            } catch (error) {
+                const errorResult = {
+                    endpoint: endpoint,
+                    error: 'Network Error',
+                    message: error.message,
+                    name: error.name,
+                    stack: error.stack
+                };
+                
+                result.textContent += JSON.stringify(errorResult, null, 2);
+                result.className = 'result error';
+            }
+        }
+
+        async function detailedFunctionTest() {
+            const result = document.getElementById('detailedResult');
+            result.textContent = 'Running detailed function test...\n\n';
+            result.className = 'result';
+            
+            const endpoints = ['/.netlify/functions/printful-products', '/api/printful-products'];
+            const results = [];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    console.log('Detailed test for:', endpoint);
+                    
+                    // Test OPTIONS request first
+                    const optionsResponse = await fetch(endpoint, {
+                        method: 'OPTIONS',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                    
+                    // Test GET request
+                    const getResponse = await fetch(endpoint, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                    
+                    const responseText = await getResponse.text();
+                    
+                    results.push({
+                        endpoint: endpoint,
+                        options: {
+                            status: optionsResponse.status,
+                            headers: Object.fromEntries(optionsResponse.headers.entries())
+                        },
+                        get: {
+                            status: getResponse.status,
+                            statusText: getResponse.statusText,
+                            headers: Object.fromEntries(getResponse.headers.entries()),
+                            bodyType: getResponse.headers.get('content-type'),
+                            bodyLength: responseText.length,
+                            bodyPreview: responseText.substring(0, 300)
+                        }
+                    });
+                    
+                } catch (error) {
+                    results.push({
+                        endpoint: endpoint,
+                        error: error.message
+                    });
+                }
+            }
+            
+            result.textContent += JSON.stringify(results, null, 2);
+            result.className = 'result info';
+        }
+
+        async function networkAnalysis() {
+            const result = document.getElementById('networkResult');
+            result.textContent = 'Analyzing network configuration...\n\n';
+            result.className = 'result';
+            
+            const analysis = {
+                currentDomain: window.location.hostname,
+                protocol: window.location.protocol,
+                deploymentType: getDeploymentType(),
+                expectedFunctionUrls: [
+                    `${window.location.origin}/.netlify/functions/printful-products`,
+                    `${window.location.origin}/api/printful-products`
+                ],
+                browserInfo: {
+                    userAgent: navigator.userAgent,
+                    cookiesEnabled: navigator.cookieEnabled,
+                    language: navigator.language,
+                    platform: navigator.platform
+                },
+                recommendations: getRecommendations()
+            };
+            
+            result.textContent += JSON.stringify(analysis, null, 2);
+            result.className = 'result warning';
+        }
+        
+        function getDeploymentType() {
+            const hostname = window.location.hostname;
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                return 'Local Development';
+            } else if (hostname.includes('netlify.app') || hostname.includes('netlify.com')) {
+                return 'Netlify Deployment';
+            } else {
+                return 'Custom Domain';
+            }
+        }
+        
+        function getRecommendations() {
+            const hostname = window.location.hostname;
+            if (hostname === 'localhost') {
+                return [
+                    'Run "netlify dev" to test functions locally',
+                    'Ensure netlify.toml is configured correctly'
+                ];
+            } else {
+                return [
+                    'Check Netlify deployment logs',
+                    'Verify netlify/functions directory is deployed',
+                    'Check function execution logs in Netlify dashboard',
+                    'Ensure netlify.toml is in root directory'
+                ];
+            }
+        }
+
+        // Auto-run environment check on page load
+        window.onload = function() {
+            checkEnvironment();
+        };
+    </script>
+</body>
+</html> 
