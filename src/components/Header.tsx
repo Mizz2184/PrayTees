@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Search, Menu, X } from 'lucide-react';
+import { ShoppingCart, Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Cart from './Cart';
 
@@ -37,7 +37,6 @@ const Header = ({ cartItems = [], isCartOpen = false, setIsCartOpen, onRemove, o
 
             {/* Right Side Icons */}
             <div className="flex items-center space-x-4">
-              <Search className="w-5 h-5 cursor-pointer hover:text-blue-600 transition-colors" />
               {setIsCartOpen && (
                 <button 
                   onClick={() => setIsCartOpen(true)}
