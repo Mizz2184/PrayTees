@@ -5,55 +5,55 @@ export const usePrintfulProducts = () => {
   const query = useQuery({
     queryKey: ['printful-products'],
     queryFn: async () => {
-      console.log('🔍 usePrintfulProducts: Starting query...');
+      console.log('🚀 usePrintfulProducts: Starting optimized query...');
       try {
-        const result = await printfulService.getAllProducts();
-        console.log('🔍 usePrintfulProducts: Raw result from API:', result);
-        console.log('🔍 usePrintfulProducts: Result length:', result?.length || 0);
+        const result = await printfulService.getAllProductsFast();
+        console.log('🚀 usePrintfulProducts: Fast result from API:', result);
+        console.log('🚀 usePrintfulProducts: Result length:', result?.length || 0);
         
         if (!result || result.length === 0) {
-          console.warn('🔍 usePrintfulProducts: No data returned from service, returning empty array');
+          console.warn('🚀 usePrintfulProducts: No data returned from service, returning empty array');
           return [];
         }
         
         return result;
       } catch (error) {
-        console.error('🔍 usePrintfulProducts: Error in queryFn:', error);
+        console.error('🚀 usePrintfulProducts: Error in queryFn:', error);
         // Instead of throwing, return empty array to trigger fallback in components
-        console.log('🔍 usePrintfulProducts: Returning empty array due to error');
+        console.log('🚀 usePrintfulProducts: Returning empty array due to error');
         return [];
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime)
+    // 🚀 AGGRESSIVE CACHING FOR FASTER LOADING
+    staleTime: 15 * 60 * 1000, // 15 minutes - products don't change often
+    gcTime: 30 * 60 * 1000, // 30 minutes - keep in memory longer
     retry: 1, // Reduced retries for faster fallback
-    retryDelay: 1000, // Faster retry
+    retryDelay: 500, // Faster retry
     // Always consider the query successful, even with empty data
     throwOnError: false,
+    // 🚀 DISABLE UNNECESSARY REFETCHES
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
-  console.log('🔍 React Query state:');
-  console.log('🔍 isLoading:', query.isLoading);
-  console.log('🔍 isFetching:', query.isFetching);
-  console.log('🔍 isSuccess:', query.isSuccess);
-  console.log('🔍 isError:', query.isError);
-  console.log('🔍 error:', query.error);
-  console.log('🔍 data:', query.data);
-  console.log('🔍 status:', query.status);
+  console.log('🚀 React Query state:');
+  console.log('🚀 isLoading:', query.isLoading);
+  console.log('🚀 isFetching:', query.isFetching);
+  console.log('🚀 isSuccess:', query.isSuccess);
+  console.log('🚀 isError:', query.isError);
+  console.log('🚀 error:', query.error);
+  console.log('🚀 data:', query.data);
+  console.log('🚀 status:', query.status);
 
   return query;
 };
 
-// Updated transformation to use real Printful pricing and variant data
+// 🚀 OPTIMIZED transformation - removed excessive logging
 export const transformPrintfulToProduct = (printfulProduct: any) => {
-  console.log('🔧 Transforming product:', printfulProduct.name);
-  
   // Get the first variant for pricing and other details
   const firstVariant = printfulProduct.firstVariant;
   const variants = printfulProduct.variants || [];
-  
-  console.log('🔧 First variant:', firstVariant);
-  console.log('🔧 Variants count:', variants.length);
   
   // Extract real price from first variant - now with enhanced data
   let price = 24.99; // Default fallback
@@ -61,13 +61,11 @@ export const transformPrintfulToProduct = (printfulProduct: any) => {
   // Use real Printful pricing when available
   if (firstVariant && firstVariant.retail_price) {
     price = parseFloat(firstVariant.retail_price);
-    console.log('🔧 Using real Printful price:', price);
   } else if (variants.length > 0) {
     // Try to get price from any available variant
     const variantWithPrice = variants.find((v: any) => v.retail_price);
     if (variantWithPrice) {
       price = parseFloat(variantWithPrice.retail_price);
-      console.log('🔧 Using variant price:', price);
     }
   }
   
@@ -88,7 +86,6 @@ export const transformPrintfulToProduct = (printfulProduct: any) => {
     } else {
       price = 24.99;
     }
-    console.log('🔧 Using fallback price based on product name:', price);
   }
   
   // Use preview image from first variant if available, otherwise thumbnail
@@ -164,6 +161,5 @@ export const transformPrintfulToProduct = (printfulProduct: any) => {
     all_variants: variants // Store all variants for detailed modal functionality
   };
   
-  console.log('🔧 Transformed product with enhanced variant data:', transformedProduct);
   return transformedProduct;
 };

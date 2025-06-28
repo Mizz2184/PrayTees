@@ -303,6 +303,77 @@ class PrintfulService {
     }
   }
 
+  // 🚀 FAST PRODUCT LOADING - Load basic products first, variants in parallel
+  async getAllProductsFast(): Promise<any[]> {
+    try {
+      console.log('🚀 Starting getAllProductsFast - optimized loading...');
+      const products = await this.getStoreProducts();
+      console.log('✅ Basic Printful products fetched:', products.length);
+      
+      if (!products || products.length === 0) {
+        console.warn('⚠️ No products returned from Printful API');
+        return [];
+      }
+      
+      // 🚀 PARALLEL PROCESSING - Load all variants in parallel instead of sequentially
+      console.log('🚀 Loading variants in parallel for faster performance...');
+      
+      const transformedProducts = await Promise.allSettled(
+        products.map(async (product) => {
+          try {
+            // Get detailed product variants for accurate pricing and variant info
+            const detailedProduct = await this.getProductVariants(product.id);
+            
+            if (detailedProduct && detailedProduct.sync_variants) {
+              // Find the first available variant for pricing
+              const firstVariant = detailedProduct.sync_variants.find(v => v.synced && !v.is_ignored) || 
+                                 detailedProduct.sync_variants[0];
+              
+              return {
+                ...product,
+                variants: detailedProduct.sync_variants,
+                firstVariant: firstVariant,
+                // Use thumbnail_url if available, otherwise use first variant preview
+                image: product.thumbnail_url || 
+                       firstVariant?.files?.find(f => f.type === 'preview')?.preview_url ||
+                       'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'
+              };
+            } else {
+              // Fallback for products without detailed variants
+              return {
+                ...product,
+                variants: [],
+                firstVariant: null,
+                image: product.thumbnail_url || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'
+              };
+            }
+          } catch (error) {
+            console.warn(`⚠️ Could not enhance product ${product.name}:`, error);
+            return {
+              ...product,
+              variants: [],
+              firstVariant: null,
+              image: product.thumbnail_url || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'
+            };
+          }
+        })
+      );
+      
+      // 🚀 HANDLE RESULTS - Only return successful results
+      const successfulProducts = transformedProducts
+        .filter(result => result.status === 'fulfilled')
+        .map(result => (result as PromiseFulfilledResult<any>).value);
+      
+      console.log('🚀 Returning optimized Printful products:', successfulProducts.length);
+      return successfulProducts;
+    } catch (error) {
+      console.error('💥 Error in getAllProductsFast:', error);
+      // Return empty array instead of fallback products
+      console.log('🔄 Returning empty array - only real products allowed');
+      return [];
+    }
+  }
+
   // Get real shipping rates from Printful API via Netlify function
   async getShippingRates(address: ShippingAddress, cartItems: any[]): Promise<ShippingRate[]> {
     try {
