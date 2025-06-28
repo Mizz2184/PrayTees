@@ -1,9 +1,18 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+let stripe;
+
+try {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error('STRIPE_SECRET_KEY environment variable is not set');
+  }
+  stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+} catch (error) {
+  console.error('Failed to initialize Stripe:', error.message);
+}
 
 exports.handler = async (event, context) => {
-  // Check if Stripe secret key is configured
-  if (!process.env.STRIPE_SECRET_KEY) {
-    console.error('STRIPE_SECRET_KEY environment variable is not set');
+  // Check if Stripe is properly initialized
+  if (!stripe) {
+    console.error('Stripe is not properly initialized');
     return {
       statusCode: 500,
       headers: {
@@ -13,7 +22,7 @@ exports.handler = async (event, context) => {
       },
       body: JSON.stringify({ 
         error: 'Stripe configuration error',
-        details: 'STRIPE_SECRET_KEY environment variable is not configured'
+        details: process.env.STRIPE_SECRET_KEY ? 'Failed to initialize Stripe library' : 'STRIPE_SECRET_KEY environment variable is not configured'
       }),
     };
   }

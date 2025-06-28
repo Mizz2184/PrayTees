@@ -1,3 +1,4 @@
+const fetch = require('cross-fetch');
 const PRINTFUL_API_KEY = 'OuQXFPCYys3ONYsDlPDFy7mNdfIKPFqGxYC1GACl';
 
 exports.handler = async (event, context) => {
