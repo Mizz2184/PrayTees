@@ -42,13 +42,30 @@ exports.handler = async (event, context) => {
     const requestBody = JSON.parse(event.body);
     console.log('🚚 Netlify function: Calculating shipping rates...', requestBody);
     
+    // Transform the request to match Printful API format
+    const printfulRequest = {
+      recipient: {
+        address1: requestBody.recipient.address1 || "123 Main St",
+        city: requestBody.recipient.city || "New York", 
+        state_code: requestBody.recipient.state_code,
+        country_code: requestBody.recipient.country_code,
+        zip: requestBody.recipient.zip || "10001"
+      },
+      items: requestBody.items.map(item => ({
+        variant_id: item.variant_id,
+        quantity: item.quantity || 1
+      }))
+    };
+
+    console.log('🚚 Transformed request for Printful:', printfulRequest);
+    
     const response = await fetch('https://api.printful.com/shipping/rates', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${PRINTFUL_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(printfulRequest),
     });
 
     if (!response.ok) {

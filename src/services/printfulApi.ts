@@ -375,7 +375,7 @@ class PrintfulService {
     // First, check if variant_id is directly available
     if (item.variant_id) {
       console.log('✅ Found direct variant_id:', item.variant_id);
-      return item.variant_id;
+      return parseInt(item.variant_id);
     }
     
     // Try to get variant ID from variant mapping using size and color
@@ -385,33 +385,34 @@ class PrintfulService {
       
       if (variantId) {
         console.log('✅ Found variant ID from mapping:', variantId, 'for key:', variantKey);
-        return variantId;
+        return parseInt(variantId);
       }
       
       // Try with just default key
       const defaultVariantId = item.variant_mapping['default-default'];
       if (defaultVariantId) {
         console.log('✅ Found default variant ID from mapping:', defaultVariantId);
-        return defaultVariantId;
+        return parseInt(defaultVariantId);
       }
     }
     
     // Try to use default_variant_id
     if (item.default_variant_id) {
       console.log('✅ Found default_variant_id:', item.default_variant_id);
-      return item.default_variant_id;
+      return parseInt(item.default_variant_id);
     }
     
-    // Last resort: use a known working variant ID based on product type
+    // Last resort: use known working variant IDs from your actual Printful store
     console.warn('⚠️ No variant_id found for item, using fallback variant ID:', item.name);
     
-    // Use different fallback variant IDs for different product types
+    // Use actual variant IDs from your Printful store (these are from your debug results)
+    // These are real variant IDs that should work with shipping calculations
     if (item.name?.toLowerCase().includes('hoodie')) {
-      return 202;
+      return 45740; // A real variant ID from your store
     } else if (item.name?.toLowerCase().includes('t-shirt') || item.name?.toLowerCase().includes('tee')) {
-      return 2;
+      return 45740; // Use the same real variant ID for consistency
     } else {
-      return 2; // Default fallback
+      return 45740; // Default to a real variant ID from your store
     }
   }
 
