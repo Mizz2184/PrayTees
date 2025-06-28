@@ -1,4 +1,11 @@
-const fetch = require('cross-fetch');
+// Try to use native fetch first, fallback to cross-fetch
+let fetch;
+try {
+  fetch = globalThis.fetch || require('cross-fetch');
+} catch (error) {
+  console.error('Failed to load fetch:', error);
+}
+
 const PRINTFUL_API_KEY = 'OuQXFPCYys3ONYsDlPDFy7mNdfIKPFqGxYC1GACl';
 
 exports.handler = async (event, context) => {
@@ -27,6 +34,11 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    // Check if fetch is available
+    if (!fetch) {
+      throw new Error('Fetch is not available in this environment');
+    }
+
     const requestBody = JSON.parse(event.body);
     console.log('🚚 Netlify function: Calculating shipping rates...', requestBody);
     

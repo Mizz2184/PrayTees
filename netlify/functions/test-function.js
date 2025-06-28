@@ -1,3 +1,11 @@
+// Try to use native fetch first, fallback to cross-fetch
+let fetch;
+try {
+  fetch = globalThis.fetch || require('cross-fetch');
+} catch (error) {
+  console.error('Failed to load fetch:', error);
+}
+
 exports.handler = async (event, context) => {
   // Enable CORS
   const headers = {
@@ -33,9 +41,13 @@ exports.handler = async (event, context) => {
       },
     };
 
+    // Test if fetch is available
+    testData.fetchAvailable = !!fetch;
+    testData.fetchType = fetch === globalThis.fetch ? 'native' : 'cross-fetch';
+    
     // Test if we can require packages
     try {
-      const fetch = require('cross-fetch');
+      const crossFetch = require('cross-fetch');
       testData.crossFetchAvailable = true;
     } catch (error) {
       testData.crossFetchAvailable = false;
