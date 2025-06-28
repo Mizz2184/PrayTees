@@ -123,18 +123,6 @@ exports.handler = async (event, context) => {
       automatic_tax: {
         enabled: true,
       },
-      // Custom fields for additional information
-      custom_fields: customerInfo?.phone ? [
-        {
-          key: 'phone',
-          label: {
-            type: 'text',
-            custom: 'Phone Number',
-          },
-          type: 'text',
-          optional: false,
-        },
-      ] : [],
     });
 
     return {
