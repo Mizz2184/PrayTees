@@ -4,10 +4,10 @@ const PRINTFUL_API_KEY = 'OuQXFPCYys3ONYsDlPDFy7mNdfIKPFqGxYC1GACl';
 const isLocalDevelopment = typeof window !== 'undefined' && 
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-// Try multiple function URL patterns for better compatibility
+// Use single endpoint for production to avoid conflicts
 const FUNCTION_ENDPOINTS = isLocalDevelopment 
   ? ['http://localhost:8888/.netlify/functions']
-  : ['/.netlify/functions', '/api'];
+  : ['/.netlify/functions'];
 
 const PRAY_TEES_STORE_ID = 16243594;
 
