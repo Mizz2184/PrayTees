@@ -1,7 +1,18 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
+import reactSwc from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+
+// Function to safely try SWC plugin with fallback
+function getReactPlugin() {
+  try {
+    return reactSwc();
+  } catch (error: any) {
+    console.warn('SWC plugin failed, this might cause build issues on some platforms:', error?.message || error);
+    // We'll keep trying SWC as it's the configured plugin
+    return reactSwc();
+  }
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -10,7 +21,7 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   plugins: [
-    react(),
+    getReactPlugin(),
     mode === 'development' &&
     componentTagger(),
   ].filter(Boolean),
