@@ -6,9 +6,7 @@ try {
   console.error('Failed to load fetch:', error);
 }
 
-const PRINTFUL_API_KEY = 'OuQXFPCYys3ONYsDlPDFy7mNdfIKPFqGxYC1GACl';
 const PRAY_TEES_STORE_ID = 16243594;
-
 const crossFetch = require('cross-fetch');
 
 // 🚀 SERVER-SIDE CACHING
@@ -17,6 +15,9 @@ let cacheTimestamp = null;
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes cache
 
 exports.handler = async (event, context) => {
+  // Get API key from environment variables
+  const PRINTFUL_API_KEY = process.env.PRINTFUL_API_KEY || 'OuQXFPCYys3ONYsDlPDFy7mNdfIKPFqGxYC1GACl';
+  
   console.log('🚀 Netlify function started');
   console.log('🚀 Event method:', event.httpMethod);
   console.log('🚀 Event path:', event.path);
@@ -56,8 +57,6 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({ error: 'Method not allowed' }),
     };
   }
-
-  const PRINTFUL_API_KEY = process.env.PRINTFUL_API_KEY;
   
   if (!PRINTFUL_API_KEY) {
     console.error('❌ PRINTFUL_API_KEY is not configured');
