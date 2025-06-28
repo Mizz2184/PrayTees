@@ -6,9 +6,9 @@ try {
   console.error('Failed to load fetch:', error);
 }
 
-const PRINTFUL_API_KEY = 'OuQXFPCYys3ONYsDlPDFy7mNdfIKPFqGxYC1GACl';
-
 exports.handler = async (event, context) => {
+  // Get API key from environment variables with fallback
+  const PRINTFUL_API_KEY = process.env.PRINTFUL_API_KEY || 'OuQXFPCYys3ONYsDlPDFy7mNdfIKPFqGxYC1GACl';
   // Enable CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',

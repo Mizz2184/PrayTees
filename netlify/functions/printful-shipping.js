@@ -6,9 +6,10 @@ try {
   console.error('Failed to load fetch:', error);
 }
 
-const PRINTFUL_API_KEY = 'OuQXFPCYys3ONYsDlPDFy7mNdfIKPFqGxYC1GACl';
-
 exports.handler = async (event, context) => {
+  // Get API key from environment variables with fallback
+  const PRINTFUL_API_KEY = process.env.PRINTFUL_API_KEY || 'OuQXFPCYys3ONYsDlPDFy7mNdfIKPFqGxYC1GACl';
+  
   // Enable CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -39,8 +40,32 @@ exports.handler = async (event, context) => {
       throw new Error('Fetch is not available in this environment');
     }
 
+    if (!event.body) {
+      throw new Error('Request body is required');
+    }
+
     const requestBody = JSON.parse(event.body);
     console.log('🚚 Netlify function: Calculating shipping rates...', requestBody);
+    
+    // Validate required fields
+    if (!requestBody.recipient || !requestBody.items) {
+      throw new Error('Missing required fields: recipient and items');
+    }
+    
+    if (!requestBody.recipient.country_code) {
+      throw new Error('Missing required field: recipient.country_code');
+    }
+    
+    if (!Array.isArray(requestBody.items) || requestBody.items.length === 0) {
+      throw new Error('Items array is required and must not be empty');
+    }
+    
+    // Validate variant IDs
+    for (const item of requestBody.items) {
+      if (!item.variant_id || isNaN(parseInt(item.variant_id))) {
+        throw new Error(`Invalid variant_id: ${item.variant_id}`);
+      }
+    }
     
     // Transform the request to match Printful API format
     const printfulRequest = {
@@ -52,8 +77,8 @@ exports.handler = async (event, context) => {
         zip: requestBody.recipient.zip || "10001"
       },
       items: requestBody.items.map(item => ({
-        variant_id: item.variant_id,
-        quantity: item.quantity || 1
+        variant_id: parseInt(item.variant_id),
+        quantity: parseInt(item.quantity) || 1
       }))
     };
 
@@ -69,11 +94,22 @@ exports.handler = async (event, context) => {
     });
 
     if (!response.ok) {
-      throw new Error(`Printful shipping API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('❌ Printful API error response:', response.status, errorText);
+      throw new Error(`Printful shipping API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('✅ Shipping rates calculated successfully');
+    console.log('✅ Shipping rates calculated successfully:', data);
+    
+    // Validate the response structure
+    if (!data || typeof data.code === 'undefined') {
+      throw new Error('Invalid response format from Printful API');
+    }
+    
+    if (data.code !== 200) {
+      throw new Error(`Printful API returned error code: ${data.code} - ${data.error || 'Unknown error'}`);
+    }
 
     return {
       statusCode: 200,
