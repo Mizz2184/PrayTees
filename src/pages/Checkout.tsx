@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { printfulService } from '@/services/printfulApi';
+import { stripeService, CartItem, CustomerInfo } from '@/services/stripeService';
+import { CreditCard, Lock, Truck } from 'lucide-react';
 
 interface CheckoutProps {
   cartItems: any[];
@@ -22,7 +24,7 @@ const Checkout = ({ cartItems, onClearCart, onRemoveFromCart, onUpdateCartQuanti
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [shipping, setShipping] = useState(9.99); // Default fallback
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CustomerInfo>({
     email: '',
     firstName: '',
     lastName: '',
@@ -32,10 +34,6 @@ const Checkout = ({ cartItems, onClearCart, onRemoveFromCart, onUpdateCartQuanti
     zipCode: '',
     country: 'United States',
     phone: '',
-    cardNumber: '',
-    expiryDate: '',
-    cvv: '',
-    nameOnCard: ''
   });
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -97,17 +95,56 @@ const Checkout = ({ cartItems, onClearCart, onRemoveFromCart, onUpdateCartQuanti
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleStripeCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form data
+    if (!formData.email || !formData.firstName || !formData.lastName) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+
+    // Validate cart items
+    if (!stripeService.validateCartItems(cartItems)) {
+      alert('Your cart is empty or contains invalid items.');
+      return;
+    }
+
     setIsProcessing(true);
 
-    // Simulate processing time
-    setTimeout(() => {
+    try {
+      // Convert cart items to Stripe format
+      const stripeCartItems: CartItem[] = cartItems.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color,
+        image: item.image,
+        variant_id: item.variant_id,
+      }));
+
+      // Prepare customer info with shipping cost
+      const customerInfo: CustomerInfo = {
+        ...formData,
+        shipping: shipping,
+      };
+
+      // Create checkout session and redirect to Stripe
+      await stripeService.createAndRedirectToCheckout({
+        cartItems: stripeCartItems,
+        customerInfo,
+        successUrl: `${window.location.origin}/checkout/success`,
+        cancelUrl: `${window.location.origin}/checkout/cancel`,
+      });
+
+    } catch (error) {
+      console.error('❌ Stripe checkout error:', error);
+      alert(`Payment processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
       setIsProcessing(false);
-      onClearCart();
-      alert('Order placed successfully! You will receive a confirmation email shortly.');
-      navigate('/');
-    }, 2000);
+    }
   };
 
   const handleRemoveFromCart = (id: string, size: string) => {
@@ -162,12 +199,25 @@ const Checkout = ({ cartItems, onClearCart, onRemoveFromCart, onUpdateCartQuanti
       
       <div className="pt-20 pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+          <h1 className="text-3xl font-bold mb-8">Secure Checkout</h1>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Checkout Form */}
             <div>
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleStripeCheckout} className="space-y-6">
+                {/* Security Notice */}
+                <Card className="border-green-200 bg-green-50">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-2 text-green-700">
+                      <Lock className="w-5 h-5" />
+                      <span className="font-medium">Secure Payment with Stripe</span>
+                    </div>
+                    <p className="text-sm text-green-600 mt-2">
+                      Your payment information is encrypted and processed securely by Stripe.
+                    </p>
+                  </CardContent>
+                </Card>
+
                 {/* Contact Information */}
                 <Card>
                   <CardHeader>
@@ -175,7 +225,7 @@ const Checkout = ({ cartItems, onClearCart, onRemoveFromCart, onUpdateCartQuanti
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <Label htmlFor="email">Email Address</Label>
+                      <Label htmlFor="email">Email Address *</Label>
                       <Input
                         id="email"
                         name="email"
@@ -192,7 +242,6 @@ const Checkout = ({ cartItems, onClearCart, onRemoveFromCart, onUpdateCartQuanti
                         id="phone"
                         name="phone"
                         type="tel"
-                        required
                         value={formData.phone}
                         onChange={handleInputChange}
                         placeholder="+1 (555) 123-4567"
@@ -204,12 +253,15 @@ const Checkout = ({ cartItems, onClearCart, onRemoveFromCart, onUpdateCartQuanti
                 {/* Shipping Address */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Shipping Address</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <Truck className="w-5 h-5" />
+                      Shipping Address
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="firstName">First Name</Label>
+                        <Label htmlFor="firstName">First Name *</Label>
                         <Input
                           id="firstName"
                           name="firstName"
@@ -219,7 +271,7 @@ const Checkout = ({ cartItems, onClearCart, onRemoveFromCart, onUpdateCartQuanti
                         />
                       </div>
                       <div>
-                        <Label htmlFor="lastName">Last Name</Label>
+                        <Label htmlFor="lastName">Last Name *</Label>
                         <Input
                           id="lastName"
                           name="lastName"
@@ -234,7 +286,6 @@ const Checkout = ({ cartItems, onClearCart, onRemoveFromCart, onUpdateCartQuanti
                       <Input
                         id="address"
                         name="address"
-                        required
                         value={formData.address}
                         onChange={handleInputChange}
                         placeholder="123 Main Street"
@@ -246,7 +297,6 @@ const Checkout = ({ cartItems, onClearCart, onRemoveFromCart, onUpdateCartQuanti
                         <Input
                           id="city"
                           name="city"
-                          required
                           value={formData.city}
                           onChange={handleInputChange}
                         />
@@ -256,7 +306,6 @@ const Checkout = ({ cartItems, onClearCart, onRemoveFromCart, onUpdateCartQuanti
                         <Input
                           id="state"
                           name="state"
-                          required
                           value={formData.state}
                           onChange={handleInputChange}
                         />
@@ -267,7 +316,6 @@ const Checkout = ({ cartItems, onClearCart, onRemoveFromCart, onUpdateCartQuanti
                       <Input
                         id="zipCode"
                         name="zipCode"
-                        required
                         value={formData.zipCode}
                         onChange={handleInputChange}
                       />
@@ -277,7 +325,6 @@ const Checkout = ({ cartItems, onClearCart, onRemoveFromCart, onUpdateCartQuanti
                       <select
                         id="country"
                         name="country"
-                        required
                         value={formData.country}
                         onChange={handleInputChange}
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -294,67 +341,24 @@ const Checkout = ({ cartItems, onClearCart, onRemoveFromCart, onUpdateCartQuanti
                   </CardContent>
                 </Card>
 
-                {/* Payment Information */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Payment Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label htmlFor="nameOnCard">Name on Card</Label>
-                      <Input
-                        id="nameOnCard"
-                        name="nameOnCard"
-                        required
-                        value={formData.nameOnCard}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cardNumber">Card Number</Label>
-                      <Input
-                        id="cardNumber"
-                        name="cardNumber"
-                        required
-                        value={formData.cardNumber}
-                        onChange={handleInputChange}
-                        placeholder="1234 5678 9012 3456"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="expiryDate">Expiry Date</Label>
-                        <Input
-                          id="expiryDate"
-                          name="expiryDate"
-                          required
-                          value={formData.expiryDate}
-                          onChange={handleInputChange}
-                          placeholder="MM/YY"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="cvv">CVV</Label>
-                        <Input
-                          id="cvv"
-                          name="cvv"
-                          required
-                          value={formData.cvv}
-                          onChange={handleInputChange}
-                          placeholder="123"
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
                 <Button 
                   type="submit" 
-                  className="w-full bg-black text-white hover:bg-gray-800" 
+                  className="w-full bg-black text-white hover:bg-gray-800 h-12" 
                   disabled={isProcessing}
                 >
-                  {isProcessing ? 'Processing...' : `Complete Order - $${total.toFixed(2)}`}
+                  {isProcessing ? (
+                    'Redirecting to Stripe...'
+                  ) : (
+                    <>
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Pay ${total.toFixed(2)} with Stripe
+                    </>
+                  )}
                 </Button>
+
+                <p className="text-xs text-gray-500 text-center">
+                  You will be redirected to Stripe's secure payment page to complete your purchase.
+                </p>
               </form>
             </div>
 
@@ -406,7 +410,7 @@ const Checkout = ({ cartItems, onClearCart, onRemoveFromCart, onUpdateCartQuanti
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Tax</span>
+                        <span>Tax (estimated)</span>
                         <span>${tax.toFixed(2)}</span>
                       </div>
                       <Separator />
@@ -414,6 +418,16 @@ const Checkout = ({ cartItems, onClearCart, onRemoveFromCart, onUpdateCartQuanti
                         <span>Total</span>
                         <span>${total.toFixed(2)}</span>
                       </div>
+                    </div>
+
+                    <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                      <h4 className="font-medium text-blue-900 mb-2">What happens next?</h4>
+                      <ul className="text-sm text-blue-800 space-y-1">
+                        <li>• Secure payment processing with Stripe</li>
+                        <li>• Order confirmation via email</li>
+                        <li>• Production begins within 24 hours</li>
+                        <li>• Tracking information provided</li>
+                      </ul>
                     </div>
                   </div>
                 </CardContent>

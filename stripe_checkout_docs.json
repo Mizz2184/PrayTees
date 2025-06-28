@@ -1,0 +1,373 @@
+{
+  "stripe_checkout_sessions": {
+    "overview": {
+      "description": "A Checkout Session represents your customer's session as they pay for one-time purchases or subscriptions through Checkout or Payment Links. We recommend creating a new Session each time your customer attempts to pay.",
+      "use_cases": [
+        "One-time payments",
+        "Subscriptions",
+        "Payment method setup"
+      ],
+      "related_objects": [
+        "Customer",
+        "PaymentIntent",
+        "Subscription"
+      ]
+    },
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/v1/checkout/sessions",
+        "description": "Create a Checkout Session"
+      },
+      {
+        "method": "POST",
+        "path": "/v1/checkout/sessions/:id",
+        "description": "Update a Checkout Session"
+      },
+      {
+        "method": "GET",
+        "path": "/v1/checkout/sessions/:id",
+        "description": "Retrieve a Checkout Session"
+      },
+      {
+        "method": "GET",
+        "path": "/v1/checkout/sessions/:id/line_items",
+        "description": "Retrieve a Checkout Session's line items"
+      },
+      {
+        "method": "GET",
+        "path": "/v1/checkout/sessions",
+        "description": "List all Checkout Sessions"
+      },
+      {
+        "method": "POST",
+        "path": "/v1/checkout/sessions/:id/expire",
+        "description": "Expire a Checkout Session"
+      }
+    ],
+    "object_attributes": {
+      "core_attributes": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the object"
+        },
+        "object": {
+          "type": "string",
+          "value": "checkout.session"
+        },
+        "mode": {
+          "type": "enum",
+          "required": true,
+          "description": "The mode of the Checkout Session",
+          "possible_values": [
+            {
+              "value": "payment",
+              "description": "Accept one-time payments for cards, iDEAL, and more"
+            },
+            {
+              "value": "setup",
+              "description": "Save payment details to charge your customers later"
+            },
+            {
+              "value": "subscription",
+              "description": "Use Stripe Billing to set up fixed-price subscriptions"
+            }
+          ]
+        },
+        "status": {
+          "type": "enum",
+          "description": "The status of the Checkout Session",
+          "possible_values": [
+            {
+              "value": "open",
+              "description": "The checkout session is still in progress. Payment processing has not started"
+            },
+            {
+              "value": "complete",
+              "description": "The checkout session is complete. Payment processing may still be in progress"
+            },
+            {
+              "value": "expired",
+              "description": "The checkout session has expired. No further processing will occur"
+            }
+          ]
+        },
+        "payment_status": {
+          "type": "enum",
+          "description": "The payment status of the Checkout Session",
+          "possible_values": [
+            {
+              "value": "paid",
+              "description": "The payment funds are available in your account"
+            },
+            {
+              "value": "unpaid",
+              "description": "The payment funds are not yet available in your account"
+            },
+            {
+              "value": "no_payment_required",
+              "description": "The payment is delayed to a future date, or the Checkout Session is in setup mode and doesn't require a payment at this time"
+            }
+          ]
+        }
+      },
+      "customer_attributes": {
+        "customer": {
+          "type": "string",
+          "nullable": true,
+          "expandable": true,
+          "description": "The ID of the customer for this Session"
+        },
+        "customer_email": {
+          "type": "string",
+          "nullable": true,
+          "description": "If provided, this value will be used when the Customer object is created"
+        },
+        "customer_details": {
+          "type": "object",
+          "nullable": true,
+          "description": "Details about the customer"
+        }
+      },
+      "payment_attributes": {
+        "currency": {
+          "type": "enum",
+          "nullable": true,
+          "description": "Three-letter ISO currency code, in lowercase. Must be a supported currency"
+        },
+        "amount_subtotal": {
+          "type": "integer",
+          "nullable": true,
+          "description": "Total of all items before discounts or taxes are applied"
+        },
+        "amount_total": {
+          "type": "integer",
+          "nullable": true,
+          "description": "Total of all items after discounts and taxes are applied"
+        },
+        "payment_intent": {
+          "type": "string",
+          "nullable": true,
+          "expandable": true,
+          "description": "The ID of the PaymentIntent for Checkout Sessions in payment mode"
+        },
+        "subscription": {
+          "type": "string",
+          "nullable": true,
+          "expandable": true,
+          "description": "The ID of the subscription for Checkout Sessions in subscription mode"
+        }
+      },
+      "ui_attributes": {
+        "ui_mode": {
+          "type": "enum",
+          "nullable": true,
+          "description": "The UI mode of the Session. Defaults to hosted",
+          "possible_values": [
+            {
+              "value": "hosted",
+              "description": "The Checkout Session will be displayed on a hosted page that customers will be redirected to"
+            },
+            {
+              "value": "embedded",
+              "description": "The Checkout Session will be displayed as an embedded form on your website"
+            },
+            {
+              "value": "custom",
+              "description": "The Checkout Session will be displayed using embedded components on your website"
+            }
+          ]
+        },
+        "url": {
+          "type": "string",
+          "nullable": true,
+          "description": "The URL to the Checkout Session. Applies to Checkout Sessions with ui_mode: hosted"
+        },
+        "success_url": {
+          "type": "string",
+          "nullable": true,
+          "description": "The URL the customer will be directed to after the payment or subscription creation is successful"
+        },
+        "cancel_url": {
+          "type": "string",
+          "nullable": true,
+          "description": "The URL the customer will be directed to if they decide to cancel payment and return to your website"
+        },
+        "return_url": {
+          "type": "string",
+          "nullable": true,
+          "description": "The URL to redirect your customer back to after they authenticate or cancel their payment on the payment method's app or site"
+        }
+      },
+      "metadata_attributes": {
+        "metadata": {
+          "type": "object",
+          "nullable": true,
+          "description": "Set of key-value pairs that you can attach to an object"
+        },
+        "client_reference_id": {
+          "type": "string",
+          "nullable": true,
+          "description": "A unique string to reference the Checkout Session. This can be a customer ID, a cart ID, or similar"
+        }
+      },
+      "line_items": {
+        "type": "object",
+        "nullable": true,
+        "expandable": true,
+        "description": "The line items purchased by the customer"
+      },
+      "automatic_tax": {
+        "type": "object",
+        "description": "Details on the state of automatic tax for the session"
+      },
+      "timestamps": {
+        "created": {
+          "type": "timestamp",
+          "description": "Time at which the object was created"
+        },
+        "expires_at": {
+          "type": "timestamp",
+          "description": "The timestamp at which the Checkout Session will expire"
+        }
+      }
+    },
+    "create_parameters": {
+      "required": {
+        "mode": {
+          "type": "enum",
+          "description": "The mode of the Checkout Session",
+          "values": ["payment", "setup", "subscription"]
+        }
+      },
+      "conditionally_required": {
+        "line_items": {
+          "type": "array of objects",
+          "description": "A list of items the customer is purchasing. Required for payment and subscription mode"
+        },
+        "success_url": {
+          "type": "string",
+          "description": "Required if ui_mode is not embedded or custom"
+        },
+        "return_url": {
+          "type": "string",
+          "description": "Required if ui_mode is embedded or custom and redirect-based payment methods are enabled"
+        },
+        "currency": {
+          "type": "enum",
+          "description": "Required for certain configurations"
+        }
+      },
+      "optional": {
+        "automatic_tax": {
+          "type": "object",
+          "description": "Settings for automatic tax lookup"
+        },
+        "client_reference_id": {
+          "type": "string",
+          "description": "A unique string to reference the Checkout Session"
+        },
+        "customer": {
+          "type": "string",
+          "description": "ID of an existing Customer"
+        },
+        "customer_email": {
+          "type": "string",
+          "description": "Value to use when creating Customer object"
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Set of key-value pairs"
+        },
+        "ui_mode": {
+          "type": "enum",
+          "description": "The UI mode of the Session",
+          "values": ["hosted", "embedded", "custom"]
+        },
+        "cancel_url": {
+          "type": "string",
+          "description": "URL for customer to return if they cancel"
+        },
+        "billing_address_collection": {
+          "type": "enum",
+          "description": "Configure whether to collect billing address"
+        },
+        "payment_method_types": {
+          "type": "array of enums",
+          "description": "List of payment method types to show"
+        }
+      }
+    },
+    "example_requests": {
+      "create_session": {
+        "method": "POST",
+        "endpoint": "/v1/checkout/sessions",
+        "code": "const session = await stripe.checkout.sessions.create({\n  success_url: 'https://example.com/success',\n  line_items: [\n    {\n      price: 'price_1MotwRLkdIwHu7ixYcPLm5uZ',\n      quantity: 2,\n    },\n  ],\n  mode: 'payment',\n});"
+      },
+      "retrieve_session": {
+        "method": "GET",
+        "endpoint": "/v1/checkout/sessions/:id",
+        "code": "const session = await stripe.checkout.sessions.retrieve(\n  'cs_test_a11YYufWQzNY63zpQ6QSNRQhkUpVph4WRmzW0zWJO2znZKdVujZ0N0S22u'\n);"
+      },
+      "update_session": {
+        "method": "POST",
+        "endpoint": "/v1/checkout/sessions/:id",
+        "code": "const session = await stripe.checkout.sessions.update(\n  'cs_test_a11YYufWQzNY63zpQ6QSNRQhkUpVph4WRmzW0zWJO2znZKdVujZ0N0S22u',\n  {\n    metadata: {\n      order_id: '6735',\n    },\n  }\n);"
+      },
+      "expire_session": {
+        "method": "POST",
+        "endpoint": "/v1/checkout/sessions/:id/expire",
+        "code": "const session = await stripe.checkout.sessions.expire(\n  'cs_test_a1Ae6ClgOkjygKwrf9B3L6ITtUuZW4Xx9FivL6DZYoYFdfAefQxsYpJJd3'\n);"
+      }
+    },
+    "example_response": {
+      "id": "cs_test_a11YYufWQzNY63zpQ6QSNRQhkUpVph4WRmzW0zWJO2znZKdVujZ0N0S22u",
+      "object": "checkout.session",
+      "amount_subtotal": 2198,
+      "amount_total": 2198,
+      "automatic_tax": {
+        "enabled": false,
+        "liability": null,
+        "status": null
+      },
+      "currency": "usd",
+      "customer": null,
+      "customer_creation": "if_required",
+      "customer_email": null,
+      "livemode": false,
+      "metadata": {},
+      "mode": "payment",
+      "payment_intent": null,
+      "payment_status": "unpaid",
+      "status": "open",
+      "success_url": "https://example.com/success",
+      "url": "https://checkout.stripe.com/c/pay/cs_test_a11YYufWQzNY63zpQ6QSNRQhkUpVph4WRmzW0zWJO2znZKdVujZ0N0S22u#...",
+      "created": 1679600215,
+      "expires_at": 1679686615
+    },
+    "limitations": {
+      "line_items": {
+        "payment_mode": "Maximum of 100 line items (recommended to consolidate if more than a few dozen)",
+        "subscription_mode": "Maximum of 20 line items with recurring Prices and 20 line items with one-time Prices"
+      },
+      "expiration": {
+        "expirable_statuses": ["open"],
+        "description": "A Checkout Session can only be expired when it is in 'open' status"
+      }
+    },
+    "related_guides": [
+      {
+        "title": "Checkout quickstart",
+        "url": "https://docs.stripe.com/checkout/quickstart"
+      },
+      {
+        "title": "Dynamically update Checkout",
+        "url": "https://docs.stripe.com/payments/checkout/dynamic-updates"
+      },
+      {
+        "title": "Customizing your success page",
+        "url": "https://docs.stripe.com/payments/checkout/custom-success-page"
+      }
+    ]
+  }
+}

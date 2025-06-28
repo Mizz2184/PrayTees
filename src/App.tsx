@@ -7,6 +7,8 @@ import Index from "./pages/Index";
 import Shop from "./pages/Shop";
 import NotFound from "./pages/NotFound";
 import Checkout from "./pages/Checkout";
+import CheckoutSuccess from "./pages/CheckoutSuccess";
+import CheckoutCancel from "./pages/CheckoutCancel";
 import { useState } from "react";
 
 interface Product {
@@ -84,6 +86,31 @@ const App = () => {
                 <Checkout 
                   cartItems={cartItems}
                   onClearCart={clearCart}
+                  onRemoveFromCart={removeFromCart}
+                  onUpdateCartQuantity={updateCartQuantity}
+                />
+              } 
+            />
+            <Route 
+              path="/checkout/success" 
+              element={
+                <CheckoutSuccess 
+                  cartItems={cartItems}
+                  onClearCart={clearCart}
+                  isCartOpen={false}
+                  setIsCartOpen={() => {}}
+                  onRemoveFromCart={removeFromCart}
+                  onUpdateCartQuantity={updateCartQuantity}
+                />
+              } 
+            />
+            <Route 
+              path="/checkout/cancel" 
+              element={
+                <CheckoutCancel 
+                  cartItems={cartItems}
+                  isCartOpen={false}
+                  setIsCartOpen={() => {}}
                   onRemoveFromCart={removeFromCart}
                   onUpdateCartQuantity={updateCartQuantity}
                 />
