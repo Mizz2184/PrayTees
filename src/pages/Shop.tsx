@@ -106,7 +106,7 @@ const Shop = ({ addToCart, cartItems = [], onRemoveFromCart, onUpdateCartQuantit
         onUpdateQuantity={handleUpdateQuantity}
       />
       
-      <div className="pt-20">
+      <div className="pt-20 pb-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h1 className="text-4xl md:text-6xl font-black uppercase mb-4 tracking-tight">
