@@ -42,9 +42,20 @@ const Contact = ({ cartItems = [], onRemoveFromCart, onUpdateCartQuantity }: Con
         body: JSON.stringify(formData),
       });
 
-      const result = await response.json();
+      // Check if the response is ok first
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+      }
 
-      if (response.ok && result.success) {
+      // Try to parse JSON, but handle cases where response isn't JSON
+      let result;
+      try {
+        result = await response.json();
+      } catch (jsonError) {
+        throw new Error('Server returned invalid response');
+      }
+
+      if (result.success) {
         toast.success('Message sent successfully! We\'ll get back to you soon.');
         
         // Reset form

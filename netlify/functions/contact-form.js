@@ -49,6 +49,36 @@ exports.handler = async (event, context) => {
       };
     }
 
+    // Check if SMTP credentials are available
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.log('📧 SMTP credentials not found in environment variables');
+      console.log('📧 Available env vars:', Object.keys(process.env).filter(key => key.includes('SMTP')));
+      
+      // In development, just return success without actually sending
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('📧 Development mode: simulating email send');
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ 
+            message: 'Development mode: Email would be sent successfully',
+            success: true,
+            development: true,
+            data: { name, email, phone, message }
+          }),
+        };
+      } else {
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ 
+            error: 'SMTP configuration not found',
+            details: 'Please configure SMTP_USER and SMTP_PASS environment variables'
+          }),
+        };
+      }
+    }
+
     // Zoho Mail SMTP configuration
     const transporter = nodemailer.createTransporter({
       host: 'smtp.zoho.com',
@@ -62,17 +92,6 @@ exports.handler = async (event, context) => {
         rejectUnauthorized: false
       }
     });
-
-    // Alternative configuration for other SMTP services
-    // const transporter = nodemailer.createTransporter({
-    //   host: 'smtp.your-provider.com',
-    //   port: 587,
-    //   secure: false,
-    //   auth: {
-    //     user: process.env.SMTP_USER,
-    //     pass: process.env.SMTP_PASS
-    //   }
-    // });
 
     const mailOptions = {
       from: process.env.SMTP_USER, // Must be the same as authenticated user for Zoho
@@ -149,7 +168,8 @@ Reply to: ${email}
       headers,
       body: JSON.stringify({ 
         error: 'Failed to send email',
-        details: error.message 
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       }),
     };
   }
