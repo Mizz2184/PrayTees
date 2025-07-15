@@ -33,20 +33,33 @@ const Contact = ({ cartItems = [], onRemoveFromCart, onUpdateCartQuantity }: Con
     setIsSubmitting(true);
 
     try {
-      // Simulate form submission
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      toast.success('Message sent successfully! We\'ll get back to you soon.');
-      
-      // Reset form
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        message: ''
+      // Send form data to Netlify function
+      const response = await fetch('/.netlify/functions/contact-form', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        toast.success('Message sent successfully! We\'ll get back to you soon.');
+        
+        // Reset form
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          message: ''
+        });
+      } else {
+        throw new Error(result.error || 'Failed to send message');
+      }
     } catch (error) {
-      toast.error('Failed to send message. Please try again.');
+      console.error('Contact form error:', error);
+      toast.error('Failed to send message. Please try again or email us directly at support@praytees.com');
     } finally {
       setIsSubmitting(false);
     }
