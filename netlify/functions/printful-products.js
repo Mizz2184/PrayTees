@@ -87,36 +87,60 @@ exports.handler = async (event, context) => {
 
     console.log('🌐 Netlify function: Fetching Printful products...');
     
-    const response = await fetch('https://api.printful.com/store/products', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${PRINTFUL_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Printful API error:', response.status, errorText);
-      throw new Error(`Printful API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log('✅ Printful products fetched successfully');
+    // 🚀 FETCH ALL PRODUCTS WITH PAGINATION
+    let allProducts = [];
+    let offset = 0;
+    const limit = 100; // Max allowed by Printful API
+    let hasMoreProducts = true;
     
-    if (data.code === 200 && data.result) {
-      // 🚀 CACHE THE RESULTS
-      cachedProducts = data.result;
-      cacheTimestamp = now;
+    while (hasMoreProducts) {
+      console.log(`📄 Fetching products page: offset=${offset}, limit=${limit}`);
       
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify(data.result),
-      };
-    } else {
-      throw new Error('Invalid response from Printful API');
+      const response = await fetch(`https://api.printful.com/store/products?offset=${offset}&limit=${limit}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${PRINTFUL_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Printful API error:', response.status, errorText);
+        throw new Error(`Printful API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.code === 200 && data.result) {
+        const products = data.result;
+        allProducts = allProducts.concat(products);
+        
+        console.log(`📄 Page fetched: ${products.length} products (total so far: ${allProducts.length})`);
+        
+        // Check if we need to fetch more pages
+        if (products.length < limit) {
+          hasMoreProducts = false;
+          console.log('✅ All products fetched - reached last page');
+        } else {
+          offset += limit;
+        }
+      } else {
+        throw new Error('Invalid response from Printful API');
+      }
     }
+    
+    console.log(`🎯 Total products fetched: ${allProducts.length}`);
+    
+    // 🚀 CACHE THE RESULTS
+    cachedProducts = allProducts;
+    cacheTimestamp = now;
+    
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify(allProducts),
+    };
     
   } catch (error) {
     console.error('❌ Error fetching Printful products:', error);

@@ -143,12 +143,11 @@ const CheckoutCancel = ({
             <div className="text-sm text-gray-600">
               <p>
                 Still having trouble? Contact us at{' '}
-                <a href="mailto:support@praytees.com" className="text-blue-600 hover:underline">
-                  support@praytees.com
+                <a href="mailto:praytees84@gmail.com" className="text-blue-600 hover:underline">
+                  praytees84@gmail.com
                 </a>
                 {' '}or call{' '}
                 <a href="tel:+1-555-PRAYTEES" className="text-blue-600 hover:underline">
-                  +1 (555) PRAYTEES
                 </a>
               </p>
             </div>
