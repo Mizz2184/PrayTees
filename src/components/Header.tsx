@@ -32,7 +32,7 @@ const Header = ({ cartItems = [], isCartOpen = false, setIsCartOpen, onRemove, o
             <nav className="hidden md:flex items-center space-x-8">
               <Link to="/shop" className="text-sm font-semibold uppercase tracking-wide hover:text-blue-600 transition-colors">Shop</Link>
               <a href="/#collections" className="text-sm font-semibold uppercase tracking-wide hover:text-blue-600 transition-colors">Collections</a>
-              <a href="/#contact" className="text-sm font-semibold uppercase tracking-wide hover:text-blue-600 transition-colors">Contact</a>
+              <Link to="/contact" className="text-sm font-semibold uppercase tracking-wide hover:text-blue-600 transition-colors">Contact</Link>
             </nav>
 
             {/* Right Side Icons */}
@@ -67,7 +67,7 @@ const Header = ({ cartItems = [], isCartOpen = false, setIsCartOpen, onRemove, o
               <nav className="flex flex-col space-y-4">
                 <Link to="/shop" className="text-sm font-semibold uppercase tracking-wide hover:text-blue-600 transition-colors">Shop</Link>
                 <a href="/#collections" className="text-sm font-semibold uppercase tracking-wide hover:text-blue-600 transition-colors">Collections</a>
-                <a href="/#contact" className="text-sm font-semibold uppercase tracking-wide hover:text-blue-600 transition-colors">Contact</a>
+                <Link to="/contact" className="text-sm font-semibold uppercase tracking-wide hover:text-blue-600 transition-colors">Contact</Link>
               </nav>
             </div>
           )}

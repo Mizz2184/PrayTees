@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Shop from "./pages/Shop";
+import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import Checkout from "./pages/Checkout";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
@@ -74,6 +75,16 @@ const App = () => {
               element={
                 <Shop 
                   addToCart={addToCart} 
+                  cartItems={cartItems}
+                  onRemoveFromCart={removeFromCart}
+                  onUpdateCartQuantity={updateCartQuantity}
+                />
+              } 
+            />
+            <Route 
+              path="/contact" 
+              element={
+                <Contact 
                   cartItems={cartItems}
                   onRemoveFromCart={removeFromCart}
                   onUpdateCartQuantity={updateCartQuantity}
