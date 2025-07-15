@@ -103,21 +103,11 @@ const Contact = ({ cartItems = [], onRemoveFromCart, onUpdateCartQuantity }: Con
                     </div>
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-1">Email</h4>
-                      <p className="text-gray-600">hello@praytees.com</p>
                       <p className="text-gray-600">support@praytees.com</p>
                     </div>
                   </div>
 
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0">
-                      <Phone className="w-6 h-6 text-blue-600 mt-1" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-1">Phone</h4>
-                      <p className="text-gray-600">+1 (555) 123-4567</p>
-                      <p className="text-gray-600 text-sm">Mon-Fri, 9am-5pm EST</p>
-                    </div>
-                  </div>
+                  
 
                   <div className="flex items-start space-x-4">
                     <div className="flex-shrink-0">
@@ -126,8 +116,8 @@ const Contact = ({ cartItems = [], onRemoveFromCart, onUpdateCartQuantity }: Con
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-1">Address</h4>
                       <p className="text-gray-600">
-                        123 Faith Street<br />
-                        Prayer City, PC 12345<br />
+                      11025 Westlake Dr<br />
+                      Charlotte, North Carolina 28273<br />
                         United States
                       </p>
                     </div>
@@ -138,17 +128,11 @@ const Contact = ({ cartItems = [], onRemoveFromCart, onUpdateCartQuantity }: Con
                   <h4 className="font-semibold text-gray-900 mb-3">Business Hours</h4>
                   <div className="space-y-2 text-sm text-gray-600">
                     <div className="flex justify-between">
-                      <span>Monday - Friday</span>
-                      <span>9:00 AM - 5:00 PM</span>
+                      <span>Monday - Sunday</span>
+                      <span>24/7 Available</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Saturday</span>
-                      <span>10:00 AM - 3:00 PM</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Sunday</span>
-                      <span>Closed</span>
-                    </div>
+                    
+                    
                   </div>
                 </div>
               </div>
