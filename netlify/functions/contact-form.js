@@ -49,13 +49,17 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Email configuration - using Gmail SMTP as a reliable option
-    // You can replace this with your preferred email service
+    // Zoho Mail SMTP configuration
     const transporter = nodemailer.createTransporter({
-      service: 'gmail',
+      host: 'smtp.zoho.com',
+      port: 587,
+      secure: false, // true for 465, false for other ports
       auth: {
-        user: process.env.SMTP_USER || 'your-email@gmail.com', // Set this in Netlify environment variables
-        pass: process.env.SMTP_PASS || 'your-app-password'     // Use app password, not regular password
+        user: process.env.SMTP_USER, // Your Zoho email address
+        pass: process.env.SMTP_PASS  // Your Zoho app password
+      },
+      tls: {
+        rejectUnauthorized: false
       }
     });
 
@@ -71,7 +75,7 @@ exports.handler = async (event, context) => {
     // });
 
     const mailOptions = {
-      from: process.env.SMTP_USER || 'noreply@praytees.com',
+      from: process.env.SMTP_USER, // Must be the same as authenticated user for Zoho
       to: 'support@praytees.com',
       subject: `New Contact Form Submission from ${name}`,
       html: `
@@ -117,7 +121,8 @@ Message:
 ${message}
 
 Reply to: ${email}
-      `
+      `,
+      replyTo: email // Set reply-to to customer's email
     };
 
     console.log('📧 Attempting to send email...');
