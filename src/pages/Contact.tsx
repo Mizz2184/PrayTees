@@ -56,7 +56,7 @@ const Contact = ({ cartItems = [], onRemoveFromCart, onUpdateCartQuantity }: Con
       }
 
       if (result.success) {
-        toast.success('Message sent successfully! We\'ll get back to you soon.');
+        toast.success('Contact form submitted successfully!');
         
         // Reset form
         setFormData({
