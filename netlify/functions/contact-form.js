@@ -1,5 +1,3 @@
-const nodemailer = require('nodemailer');
-
 exports.handler = async (event, context) => {
   console.log('📧 Contact form submission received');
   console.log('📧 Event method:', event.httpMethod);
@@ -49,125 +47,56 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Check if SMTP credentials are available
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.log('📧 SMTP credentials not found in environment variables');
-      console.log('📧 Available env vars:', Object.keys(process.env).filter(key => key.includes('SMTP')));
-      
-      // In development, just return success without actually sending
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('📧 Development mode: simulating email send');
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({ 
-            message: 'Development mode: Email would be sent successfully',
-            success: true,
-            development: true,
-            data: { name, email, phone, message }
-          }),
-        };
-      } else {
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({ 
-            error: 'SMTP configuration not found',
-            details: 'Please configure SMTP_USER and SMTP_PASS environment variables'
-          }),
-        };
-      }
-    }
+    // Webhook URL for Make.com
+    const webhookUrl = 'https://hook.us2.make.com/hsrvwinyy5o4gfsokcgkdpom256fwmoq';
 
-    // Zoho Mail SMTP configuration
-    const transporter = nodemailer.createTransporter({
-      host: 'smtp.zoho.com',
-      port: 587,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: process.env.SMTP_USER, // Your Zoho email address
-        pass: process.env.SMTP_PASS  // Your Zoho app password
-      },
-      tls: {
-        rejectUnauthorized: false
-      }
-    });
-
-    const mailOptions = {
-      from: process.env.SMTP_USER, // Must be the same as authenticated user for Zoho
-      to: 'support@praytees.com',
-      subject: `New Contact Form Submission from ${name}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #1e40af; border-bottom: 2px solid #1e40af; padding-bottom: 10px;">
-            New Contact Form Submission
-          </h2>
-          
-          <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin-top: 0; color: #374151;">Contact Information</h3>
-            <p><strong>Name:</strong> ${name}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            ${phone ? `<p><strong>Phone:</strong> ${phone}</p>` : ''}
-          </div>
-          
-          <div style="background: #ffffff; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
-            <h3 style="margin-top: 0; color: #374151;">Message</h3>
-            <p style="white-space: pre-wrap; line-height: 1.6;">${message}</p>
-          </div>
-          
-          <div style="margin-top: 20px; padding: 15px; background: #dbeafe; border-radius: 8px;">
-            <p style="margin: 0; font-size: 14px; color: #1e40af;">
-              <strong>Reply to:</strong> <a href="mailto:${email}" style="color: #1e40af;">${email}</a>
-            </p>
-          </div>
-          
-          <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-          
-          <p style="font-size: 12px; color: #6b7280; text-align: center;">
-            This email was sent from the PrayTees contact form on your website.
-          </p>
-        </div>
-      `,
-      // Also include a plain text version
-      text: `
-New Contact Form Submission
-
-Name: ${name}
-Email: ${email}
-${phone ? `Phone: ${phone}` : ''}
-
-Message:
-${message}
-
-Reply to: ${email}
-      `,
-      replyTo: email // Set reply-to to customer's email
+    // Prepare the data to send to the webhook
+    const webhookData = {
+      name,
+      email,
+      phone: phone || null,
+      message,
+      timestamp: new Date().toISOString(),
+      source: 'PrayTees Contact Form'
     };
 
-    console.log('📧 Attempting to send email...');
+    console.log('📧 Sending data to webhook...');
+
+    // Send data to the webhook
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(webhookData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Webhook request failed with status: ${response.status} - ${response.statusText}`);
+    }
+
+    const responseData = await response.text();
+    console.log('✅ Webhook response:', responseData);
     
-    // Send the email
-    await transporter.sendMail(mailOptions);
-    
-    console.log('✅ Email sent successfully');
+    console.log('✅ Contact form data sent successfully to webhook');
     
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({ 
-        message: 'Email sent successfully',
+        message: 'Contact form submitted successfully',
         success: true 
       }),
     };
 
   } catch (error) {
-    console.error('❌ Error sending email:', error);
+    console.error('❌ Error sending data to webhook:', error);
     
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({ 
-        error: 'Failed to send email',
+        error: 'Failed to submit contact form',
         details: error.message,
         stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       }),
